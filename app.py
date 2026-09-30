@@ -5,6 +5,11 @@ from langchain_openai import ChatOpenAI
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables.history import RunnableWithMessageHistory
+
+from langchain_core.chat_history import InMemoryChatMessageHistory
+from langchain_core.runnables.history import RunnableWithMessageHistory
+
 from dotenv import load_dotenv
 from src.prompt import *
 import os
@@ -47,6 +52,38 @@ prompt = ChatPromptTemplate.from_messages(
 question_answer_chain = create_stuff_documents_chain(chatModel, prompt)
 rag_chain = create_retrieval_chain(retriever, question_answer_chain)
 
+# This dictionary stores conversation history.
+# Key   = session_id
+# Value = conversation history for that session
+
+store = {}
+
+
+def get_session_history(session_id: str):
+
+    # If this session does not exist,
+    # create a new conversation history.
+    if session_id not in store:
+        store[session_id] = InMemoryChatMessageHistory()
+
+    return store[session_id]
+
+
+# Wrap the RAG chain with conversation memory
+
+chain_with_history = RunnableWithMessageHistory(
+    rag_chain,
+    get_session_history,
+
+    # Current user question is stored in "input"
+    input_messages_key="input",
+
+    # Conversation history will be passed as "history"
+    history_messages_key="history",
+
+    # RAG chain returns the answer in this key
+    output_messages_key="answer"
+)
 
 
 @app.route("/")
@@ -60,7 +97,16 @@ def chat():
     msg = request.form["msg"]
     input = msg
     print(input)
-    response = rag_chain.invoke({"input": msg})
+
+    response = chain_with_history.invoke(
+        {"input": msg},
+        config={
+            "configurable": {
+                "session_id": "user_1"
+            }
+        }
+    )
+
     print("Response : ", response["answer"])
     return str(response["answer"])
 

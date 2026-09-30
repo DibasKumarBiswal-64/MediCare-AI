@@ -1,6 +1,8 @@
 from langchain_community.document_loaders import PyPDFLoader, DirectoryLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_core.chat_history import InMemoryChatMessageHistory
+from langchain_core.chat_history import BaseChatMessageHistory
 from typing import List
 from langchain.schema import Document
 
@@ -45,6 +47,13 @@ def download_hugging_face_embeddings():
         model_name=model_name
         )
     return embeddings
+
+store = {}
+
+def get_by_session_id(session_id: str) -> BaseChatMessageHistory:
+    if session_id not in store:
+        store[session_id] = InMemoryChatMessageHistory() 
+    return store[session_id]
 
 
 

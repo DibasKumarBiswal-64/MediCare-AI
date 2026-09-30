@@ -5,5 +5,11 @@ system_prompt = (
 "Do not diagnose diseases, prescribe medications, or recommend dosages. "
 "For emergencies or severe symptoms, advise the user to seek immediate professional medical care."
 "\n\n"
-"{context}"
+"Conversation history:\n"
+    "{history}"
+
+    "\n\n"
+
+    "Medical context:\n"
+    "{context}"
 )
